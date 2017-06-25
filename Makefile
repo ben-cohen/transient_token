@@ -34,3 +34,8 @@ pam_transient_token.o: pam_transient_token.c transient_token.h
 
 clean:
 	$(RM) get_transient_token pam_transient_token.so pam_transient_token.o
+
+install:
+	$(CP) get_transient_token /usr/local/bin/get_transient_token
+	$(CP) pam_transient_token.so /lib/x86_64-linux-gnu/security/pam_transient_token.so
+	$(CP) unix-or-token-auth /etc/pam.d/unix-or-token-auth
