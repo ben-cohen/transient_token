@@ -18,7 +18,7 @@
 #  <http://www.gnu.org/licenses/>.
 #
 
-CFLAGS += -ggdb
+CFLAGS += -ggdb -Wall
 CP = cp
 
 all: get_transient_token pam_transient_token.so

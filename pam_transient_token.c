@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <pwd.h>
+#include <unistd.h>
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>

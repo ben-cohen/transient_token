@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <openssl/rand.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -41,7 +42,7 @@
 int getrandbase64(char *data_base64)
 {
     int rc;
-    char data_raw[CHALLENGE_SIZE_RAW_BYTES];
+    unsigned char data_raw[CHALLENGE_SIZE_RAW_BYTES];
     BIO *mem = BIO_new(BIO_s_mem());
     if (mem == NULL)
         return -1;
@@ -188,7 +189,7 @@ int main()
     if (FD_ISSET(fd, &readfds))
     {
         // TODO: This bit should also timeout
-        int addrsize = sizeof(addr);
+        socklen_t addrsize = sizeof(addr);
         int fdc = accept(fd, (struct sockaddr*)&addr, &addrsize);
 
         char inchallenge[CHALLENGE_SIZE_BASE64_BYTES];  
