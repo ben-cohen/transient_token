@@ -37,35 +37,46 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                                    const char **argv)
 {
    int rc;
-   const char *password;
+   const char *token;
 
-   rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&password);
+   rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&token);
    if (rc != PAM_SUCCESS)
      return PAM_AUTHINFO_UNAVAIL;
 
-   if (strcmp(password, "LETMEIN") != 0)
+   /*
+    * Parse the token.  It should look like:
+    *    TRANSTOK:<uid>:<pid>:<udspath>:<challenge>:<response>:"
+    */
+   char token_challenge[CHALLENGE_SIZE_BASE64_BYTES];
+   char token_response[CHALLENGE_SIZE_BASE64_BYTES];
+   char token_udspath[MAX_UDS_PATH];
+   int token_pid;
+   int token_uid;
+   if (sscanf(token, "TRANSTOK:%d:%d:%.*s:%.*s:%.*s:",
+              &token_uid,
+              &token_pid,
+              token_udspath,
+              token_challenge,
+              token_response) != 5)
      return PAM_AUTH_ERR;
 
-   return PAM_SUCCESS;
-
-   //
-
-   char stuff[128];
-   char challenge[CHALLENGE_SIZE_BASE64_BYTES];
-   char response[CHALLENGE_SIZE_BASE64_BYTES];
-   int pid;
-   int uid;
-   char udspath[MAX_UDS_PATH];
-   if (sscanf(password, "TRANSTOK:%d:%d:%s:%s:%s:", ) != 5)
-     return PAM_AUTH_ERR;
-
+   /* Find out which user is trying to log in. */
    const char *user;
    rc = pam_get_user(pamh, &user, NULL);
    if (rc != PAM_SUCCESS)
      return PAM_AUTHINFO_UNAVAIL;
 
-   // Token should look like:
-   // TRANSTOK:<uid>:<expire-time>:<stuff>
+   /* Verify that the user matches the uid from the token. */
+   struct passwd *p = getpwnam(user);
+   if (p == NULL)
+     return PAM_AUTHINFO_UNAVAIL;
+   if (p->pw_uid != uid)
+     return PAM_AUTH_ERR;
+
+   /* Open the unix domain socket given.  Check that it matches the given uid
+    * and pid. */
+
+   /* Send the challenge and check that the response is correct. */
 
    return PAM_SUCCESS;
 }
