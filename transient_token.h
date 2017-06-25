@@ -24,7 +24,7 @@
 #define _TRANSIENT_TOKEN_H
 
 #define CHALLENGE_SIZE_QUADS 8
-#define TIMEOUT_SECS 10
+#define TIMEOUT_SECS 60
 #define MAX_UDS_PATH 32
 
 #ifdef PAM_STATIC             /* for the case that this module is static */
