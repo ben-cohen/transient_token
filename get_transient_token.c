@@ -44,12 +44,17 @@ int getrandbase64(char *data_base64)
 {
   int rc;
   char data_raw[CHALLENGE_SIZE_RAW_BYTES];
+  BIO *mem = BIO_new(BIO_s_mem());
+  if (mem == NULL)
+    return -1;
+
   BIO *base64 = BIO_new(BIO_f_base64());
   if (base64 == NULL)
     return -1;
 
-  BIO *mem = BIO_new_mem_buf(data_base64, CHALLENGE_SIZE_BASE64_BYTES);
-  BIO_push(base64, mem);
+  mem = BIO_push(base64, mem);
+  if (mem == NULL)
+    return -1;
 
   rc = RAND_bytes(data_raw, sizeof(data_raw));
   if (rc != 1)
@@ -60,6 +65,13 @@ int getrandbase64(char *data_base64)
     return -1;
 
   BIO_flush(mem);
+
+  char *bio_data_base64;
+  int len = BIO_get_mem_data(mem, &bio_data_base64);
+  if (len != CHALLENGE_SIZE_BASE64_BYTES + 1)
+    return -1;
+  memcpy(data_base64, bio_data_base64, CHALLENGE_SIZE_BASE64_BYTES);
+
   BIO_free_all(mem);
 
   return 0;
@@ -135,11 +147,13 @@ int main()
   char buffer[255];
   int len;
   len = snprintf(buffer, sizeof(buffer),
-                 "TRANSTOK:%d:%d:%s:%s:%s:",
+                 "TRANSTOK:%d:%d:%s:%.*s:%.*s:",
                  getuid(),
                  getpid(),
                  udspath,
+                 CHALLENGE_SIZE_BASE64_BYTES,
                  challenge,
+                 CHALLENGE_SIZE_BASE64_BYTES,
                  response);
   if (len == sizeof(buffer))
   {
