@@ -81,7 +81,12 @@ int main()
     int rc;
 
     /* Create unix domain socket */
-    char udspath[MAX_UDS_PATH] = "/tmp/uds";
+    char udspath[MAX_UDS_PATH];
+    snprintf(udspath,
+             sizeof(udspath),
+             "/tmp/transient-token-%d-%d",
+             getuid(),
+             getpid());
     unlink(udspath);
 
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -100,6 +105,7 @@ int main()
     {
         fprintf(stderr, "bind failed\n");
         close(fd);
+        unlink(udspath);
         exit(1);
     }
 
