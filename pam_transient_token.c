@@ -49,18 +49,16 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
 
     /*
      * Parse the token.  It should look like:
-     *    TRANSTOK:<uid>:<pid>:<udspath>:<challenge>:<response>:"
+     *    TTK<uid>:<pid>:<challenge>"
      */
     char token_challenge[CHALLENGE_SIZE_BASE64_BYTES + 1];
     char token_response[CHALLENGE_SIZE_BASE64_BYTES + 1];
-    char token_udspath[MAX_UDS_PATH + 1];
     int token_pid;
     int token_uid;
     char token_format[100];
     if (snprintf(token_format,
                  sizeof(token_format),
-                 "TRANSTOK:%%d:%%d:%%%d[^:]:%%%d[A-Za-z0-9+/]:%%%d[A-Za-z0-9+/]:",
-                 MAX_UDS_PATH,
+                 "TTK%%d:%%d:%%%d[A-Za-z0-9+/]%%%d[A-Za-z0-9+/]",
                  CHALLENGE_SIZE_BASE64_BYTES,
                  CHALLENGE_SIZE_BASE64_BYTES) == sizeof(token_format))
         return PAM_AUTHINFO_UNAVAIL;
@@ -68,11 +66,19 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                 token_format,
                 &token_uid,
                 &token_pid,
-                token_udspath,
                 token_challenge,
                 token_response);
-    if (rc != 5)
+    if (rc != 4)
         return PAM_AUTH_ERR;
+
+    char udspath[MAX_UDS_PATH + 1];
+    rc = snprintf(udspath,
+                  MAX_UDS_PATH,
+                  UDS_PATH,
+                  token_uid,
+                  token_pid);
+    if (rc == MAX_UDS_PATH)
+        return PAM_AUTHINFO_UNAVAIL;
 
     /* Find out which user is trying to log in. */
     const char *user;
@@ -96,7 +102,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, token_udspath, sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, udspath, sizeof(addr.sun_path) - 1);
     rc = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
     if (rc != 0)
         return PAM_AUTH_ERR;

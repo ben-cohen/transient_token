@@ -23,9 +23,10 @@
 #ifndef _TRANSIENT_TOKEN_H
 #define _TRANSIENT_TOKEN_H
 
-#define CHALLENGE_SIZE_QUADS 8
+#define CHALLENGE_SIZE_QUADS 4
 #define TIMEOUT_SECS 60
 #define MAX_UDS_PATH 32
+#define UDS_PATH "/tmp/transient-token-%d-%d"
 
 #ifdef PAM_STATIC             /* for the case that this module is static */
 extern struct pam_module _pam_transient_token_modstruct;

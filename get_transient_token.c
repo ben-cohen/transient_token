@@ -84,7 +84,7 @@ int main()
     char udspath[MAX_UDS_PATH];
     snprintf(udspath,
              sizeof(udspath),
-             "/tmp/transient-token-%d-%d",
+             UDS_PATH,
              getuid(),
              getpid());
     unlink(udspath);
@@ -151,10 +151,9 @@ int main()
     char buffer[255];
     int len;
     len = snprintf(buffer, sizeof(buffer),
-                   "TRANSTOK:%d:%d:%s:%.*s:%.*s:",
+                   "TTK%d:%d:%.*s%.*s",
                    getuid(),
                    getpid(),
-                   udspath,
                    CHALLENGE_SIZE_BASE64_BYTES,
                    challenge,
                    CHALLENGE_SIZE_BASE64_BYTES,

@@ -1,9 +1,9 @@
                            PAM module transient_token
                          ------------------------------
 
-This is a PAM module for Linux to provide a token that can be requested
-by a user that can then be used to authenticate once within a short
-period.
+Transient_token is a PAM module for Linux to provide a token that can be
+requested by a user that can then be used to authenticate once within a
+short period.
 
 To install:
 
@@ -21,16 +21,17 @@ into the background and wait for 60 seconds (by default) for an
 authentication request from PAM before exiting.  The token looks like
 this:
 
-    TRANSTOK:<uid>:<pid>:<udspath>:<challenge>:<response>:
+    TTK<uid>:<pid>:<challenge><response>
 
 For example:
 
-    TRANSTOK:1000:13551:/tmp/transient-token-1000-13551:0ycnGZhIaHFVZ5VWM24QbiGM0UKIVXKR:WxchwDFSafNwxIlBLkgU0BYcn0lntKGR:
+    TTK1000:13551:M24QbiGM0UKIVXKR
 
 Authentication is performed by the PAM module connecting to the Unix
-domain socket given by the path and checking that it corresponds to the
-given user id and process id; it then writes the challenge and expects
-to receive the correct response.
+domain socket given by the path "/tmp/transient-token-<uid>-<pid>" (by
+default) and checking that it corresponds to the given user id and
+process id; it then writes the challenge and expects to receive the
+response "PASS" rather than "FAIL".
 
 The token is never saved anywhere and is no longer valid after
 get_transient_token exits.
@@ -77,7 +78,3 @@ together to log in using ssh credentials:
         'get_transient_token ; sleep 10'
     | (read TOKEN ; \
        xfreerdp /v:localhost:12345 /u:$USER /p:"$TOKEN")
-
-
-(Unfortunately the token is longer than the maximum password of 32 bytes
-allowed by rdesktop and RDP protocol versions 4 and 5.)
