@@ -1,0 +1,83 @@
+                           PAM module transient_token
+                         ------------------------------
+
+This is a PAM module for Linux to provide a token that can be requested
+by a user that can then be used to authenticate once within a short
+period.
+
+To install:
+
+    make
+    sudo make install
+
+To set up, add "pam_transient_token.so" as the auth method in the
+appropriate files in /etc/pam.d.  If you want to be able to specify a
+password that matches either the user's normal Unix password or a
+transient_token then use unix-or-token-auth as the include instead of
+common-auth.
+
+To use, run get_transient_token.  It will print out a token and then go
+into the background and wait for 60 seconds (by default) for an
+authentication request from PAM before exiting.  The token looks like
+this:
+
+    TRANSTOK:<uid>:<pid>:<udspath>:<challenge>:<response>:
+
+For example:
+
+    TRANSTOK:1000:13551:/tmp/transient-token-1000-13551:0ycnGZhIaHFVZ5VWM24QbiGM0UKIVXKR:WxchwDFSafNwxIlBLkgU0BYcn0lntKGR:
+
+Authentication is performed by the PAM module connecting to the Unix
+domain socket given by the path and checking that it corresponds to the
+given user id and process id; it then writes the challenge and expects
+to receive the correct response.
+
+The token is never saved anywhere and is no longer valid after
+get_transient_token exits.
+
+This is expected to be useful occasionally for scripted authentication.
+It is unlikely to be useful for passwords that need to be typed
+manually: for that, see Markus Kuhn's one-time password login PAM module
+at <https://www.cl.cam.ac.uk/~mgk25/otpw.html>.
+
+For example, we can use this to use the authentication provided by ssh
+keys to obtain a token to use for another login that doesn't support ssh
+key authentication.
+
+The remote desktop protocol (RDP) doesn't support ssh key
+authentication.  So to log in to a remote server that is running both
+sshd and xrdp (and with /etc/pam.d/xrdp-sesman modified appropriately)
+you could log in over ssh and run
+
+    get_transient_token
+
+to get a token, and then use it on the command line to run xfreerdp:
+
+    xfreerdp /v:server /u:ben /p:"$token"
+
+That isn't very useful in itself but you can chain these commands
+together to log in using ssh credentials:
+
+    # edit as appropriate
+    SERVER=server
+    USER=`whoami`
+    REMPORT=3389
+
+    # direct rdp connection
+    ssh $SERVER \
+        -x \
+        get_transient_token
+    | (read TOKEN ; \
+       xfreerdp /v:$SERVER:$REMPORT /u:$USER /p:"$TOKEN")
+
+    # rdp via ssh tunnel
+    ssh $SERVER \
+        -x \
+        -L localhost:12345:localhost:$REMPORT \
+        'get_transient_token ; sleep 10'
+    | (read TOKEN ; \
+       xfreerdp /v:localhost:12345 /u:$USER /p:"$TOKEN")
+
+
+(Unfortunately the token is longer than the maximum password of 32 bytes
+allowed by rdesktop and RDP protocol versions 4 and 5.)

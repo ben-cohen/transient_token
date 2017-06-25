@@ -1,2 +1,4 @@
+.*.swp
 *.o
 *.so
+get_transient_token
