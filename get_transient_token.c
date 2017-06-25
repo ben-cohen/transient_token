@@ -1,4 +1,24 @@
 /*
+ *  This file is part of transient_token.
+ *
+ *  transient_token is free software: you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  transient_token is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with transient_token.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * get_transient_token.c: generate token and verify it for PAM auth
+ *
  * Compile using:
  *     gcc -o get_transient_token get_transient_token.c -lssl -lcrypto
  */
