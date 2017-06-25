@@ -1,6 +1,6 @@
 /*
  * Compile using:
- *     gcc -o get_transient_token get_transient_token.c
+ *     gcc -o get_transient_token get_transient_token.c -lssl -lcrypto
  */
 
 #include <stdio.h>
@@ -11,16 +11,47 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/select.h>
+#include <openssl/rand.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
-#define CHALLENGE_SIZE 32
-#define TIMEOUT_SECS   10
+#include "transient_token.h"
+
+#define CHALLENGE_SIZE_RAW_BYTES          (CHALLENGE_SIZE_QUADS * 3)
+#define CHALLENGE_SIZE_BASE64_BYTES       (CHALLENGE_SIZE_QUADS * 4)
+
+int getrandbase64(char *data_base64)
+{
+  int rc;
+  char data_raw[CHALLENGE_SIZE_RAW_BYTES];
+  BIO *base64 = BIO_new(BIO_f_base64());
+  if (base64 == NULL)
+    return -1;
+
+  BIO *mem = BIO_new_mem_buf(data_base64, CHALLENGE_SIZE_BASE64_BYTES);
+  BIO_push(base64, mem);
+
+  rc = RAND_bytes(data_raw, sizeof(data_raw));
+  if (rc != 1)
+    return -1;
+
+  rc = BIO_write(base64, data_raw, sizeof(data_raw));
+  if (rc != sizeof(data_raw))
+    return -1;
+
+  BIO_flush(mem);
+  BIO_free_all(mem);
+
+  return 0;
+}
+
 
 int main()
 {
   int rc;
 
   /* Create unix domain socket */
-  char udspath[32] = "/tmp/uds";
+  char udspath[MAX_UDS_PATH] = "/tmp/uds";
   unlink(udspath);
 
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -61,9 +92,24 @@ int main()
   }
 
   /* Generate a random challenge and response */
-  char challenge[CHALLENGE_SIZE];
-  char response[CHALLENGE_SIZE];
-  // XXX TODO!!
+  char challenge[CHALLENGE_SIZE_BASE64_BYTES];
+  char response[CHALLENGE_SIZE_BASE64_BYTES];
+  rc = getrandbase64(challenge);
+  if (rc != 0)
+  {
+    fprintf(stderr, "failed to generate challenge\n");
+    close(fd);
+    unlink(udspath);
+    exit(1);
+  }
+  rc = getrandbase64(response);
+  if (rc != 0)
+  {
+    fprintf(stderr, "failed to generate response\n");
+    close(fd);
+    unlink(udspath);
+    exit(1);
+  }
 
   /* Generate and print the token */
   char buffer[255];
@@ -88,9 +134,11 @@ int main()
   memset(buffer, 0, sizeof(buffer));
 
   /* Daemonize */
+  fflush(stdout);
   daemon(0, 0);
 
   /* Listen for up to the timeout */
+  // TODO: The timeout could be a command-line option
   struct timeval timeout;
   timeout.tv_sec = TIMEOUT_SECS;
   timeout.tv_usec = 0;
@@ -106,9 +154,9 @@ int main()
     int addrsize = sizeof(addr);
     int fdc = accept(fd, (struct sockaddr*)&addr, &addrsize);
 
-    char inchallenge[CHALLENGE_SIZE];  
-    read(fdc, inchallenge, CHALLENGE_SIZE);
-    if (memcmp(challenge, inchallenge, CHALLENGE_SIZE) == 0)
+    char inchallenge[CHALLENGE_SIZE_BASE64_BYTES];  
+    read(fdc, inchallenge, CHALLENGE_SIZE_BASE64_BYTES);
+    if (memcmp(challenge, inchallenge, CHALLENGE_SIZE_BASE64_BYTES) == 0)
     {
       write(fdc, response, sizeof(response));
       write(fdc, "\n", 1);

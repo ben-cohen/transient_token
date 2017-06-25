@@ -1,0 +1,8 @@
+#ifndef _TRANSIENT_TOKEN_H
+#define _TRANSIENT_TOKEN_H
+
+#define CHALLENGE_SIZE_QUADS 8
+#define TIMEOUT_SECS 10
+#define MAX_UDS_PATH 32
+
+#endif
