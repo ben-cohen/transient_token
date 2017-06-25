@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 et: */
 /*
  *  This file is part of transient_token.
  *
@@ -18,10 +19,6 @@
 
 /*
  * pam_transient_token.c: PAM module for auth for transient_token
- *
- * Compile using:
- *     gcc -fPIC -c pam_transient_token.c
- *     gcc -shared -o pam_transient_token.so pam_transient_token.o -lpam
  */
 
 #include <stddef.h>

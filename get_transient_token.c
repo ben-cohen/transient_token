@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 et: */
 /*
  *  This file is part of transient_token.
  *
@@ -18,9 +19,6 @@
 
 /*
  * get_transient_token.c: generate token and verify it for PAM auth
- *
- * Compile using:
- *     gcc -o get_transient_token get_transient_token.c -lssl -lcrypto
  */
 
 #include <stdio.h>

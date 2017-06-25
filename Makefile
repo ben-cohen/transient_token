@@ -1,3 +1,5 @@
+# vim: noet
+
 #
 #  This file is part of transient_token.
 #
