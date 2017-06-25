@@ -23,6 +23,10 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <pwd.h>
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
@@ -47,17 +51,27 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
      * Parse the token.  It should look like:
      *    TRANSTOK:<uid>:<pid>:<udspath>:<challenge>:<response>:"
      */
-    char token_challenge[CHALLENGE_SIZE_BASE64_BYTES];
-    char token_response[CHALLENGE_SIZE_BASE64_BYTES];
-    char token_udspath[MAX_UDS_PATH];
+    char token_challenge[CHALLENGE_SIZE_BASE64_BYTES + 1];
+    char token_response[CHALLENGE_SIZE_BASE64_BYTES + 1];
+    char token_udspath[MAX_UDS_PATH + 1];
     int token_pid;
     int token_uid;
-    if (sscanf(token, "TRANSTOK:%d:%d:%.*s:%.*s:%.*s:",
-               &token_uid,
-               &token_pid,
-               token_udspath,
-               token_challenge,
-               token_response) != 5)
+    char token_format[100];
+    if (snprintf(token_format,
+                 sizeof(token_format),
+                 "TRANSTOK:%%d:%%d:%%%d[^:]:%%%d[A-Za-z0-9+/]:%%%d[A-Za-z0-9+/]:",
+                 MAX_UDS_PATH,
+                 CHALLENGE_SIZE_BASE64_BYTES,
+                 CHALLENGE_SIZE_BASE64_BYTES) == sizeof(token_format))
+        return PAM_AUTHINFO_UNAVAIL;
+    rc = sscanf(token,
+                token_format,
+                &token_uid,
+                &token_pid,
+                token_udspath,
+                token_challenge,
+                token_response);
+    if (rc != 5)
         return PAM_AUTH_ERR;
 
     /* Find out which user is trying to log in. */
@@ -70,13 +84,34 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     struct passwd *p = getpwnam(user);
     if (p == NULL)
         return PAM_AUTHINFO_UNAVAIL;
-    if (p->pw_uid != uid)
+    if (p->pw_uid != token_uid)
         return PAM_AUTH_ERR;
 
     /* Open the unix domain socket given.  Check that it matches the given uid
      * and pid. */
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd == -1)
+        return PAM_AUTHINFO_UNAVAIL;
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, token_udspath, sizeof(addr.sun_path) - 1);
+    rc = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
+    if (rc != 0)
+        return PAM_AUTH_ERR;
 
     /* Send the challenge and check that the response is correct. */
+    rc = write(fd, token_challenge, CHALLENGE_SIZE_BASE64_BYTES);
+    if (rc != CHALLENGE_SIZE_BASE64_BYTES)
+        return PAM_AUTH_ERR;
+
+    char inresponse[CHALLENGE_SIZE_BASE64_BYTES];
+    rc = read(fd, inresponse, CHALLENGE_SIZE_BASE64_BYTES);
+    if (rc != sizeof(inresponse))
+        return PAM_AUTH_ERR;
+    if (memcmp(token_response, inresponse, CHALLENGE_SIZE_BASE64_BYTES) != 0)
+        return PAM_AUTH_ERR;
 
     return PAM_SUCCESS;
 }
