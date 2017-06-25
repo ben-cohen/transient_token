@@ -19,6 +19,7 @@
 #
 
 CFLAGS += -ggdb
+CP = cp
 
 all: get_transient_token pam_transient_token.so
 
