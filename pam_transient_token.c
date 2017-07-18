@@ -57,11 +57,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     int token_pid;
     int token_uid;
     char token_format[100];
-    if (snprintf(token_format,
-                 sizeof(token_format),
-                 "TTK%%d:%%d:%%%d[A-Za-z0-9+/]%%%d[A-Za-z0-9+/]",
-                 CHALLENGE_SIZE_BASE64_BYTES,
-                 CHALLENGE_SIZE_BASE64_BYTES) == sizeof(token_format))
+
+    rc = snprintf(token_format,
+                  sizeof(token_format),
+                  "TTK%%d:%%d:%%%d[A-Za-z0-9+/]%%%d[A-Za-z0-9+/]",
+                  CHALLENGE_SIZE_BASE64_BYTES,
+                  CHALLENGE_SIZE_BASE64_BYTES);
+    if (rc <= 0 || rc >= sizeof(token_format))
         return PAM_AUTHINFO_UNAVAIL;
     rc = sscanf(token,
                 token_format,
