@@ -21,6 +21,8 @@
  * pam_transient_token.c: PAM module for auth for transient_token
  */
 
+//#define DEBUG 1
+
 #include <stddef.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -28,6 +30,9 @@
 #include <sys/un.h>
 #include <pwd.h>
 #include <unistd.h>
+#ifdef DEBUG
+#include <syslog.h>
+#endif
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
@@ -65,6 +70,16 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                   CHALLENGE_SIZE_BASE64_BYTES);
     if (rc <= 0 || rc >= sizeof(token_format))
         return PAM_AUTHINFO_UNAVAIL;
+
+#ifdef DEBUG
+    openlog("pam_transient_token.so", 0, LOG_AUTHPRIV);
+    syslog(LOG_DEBUG,
+           "Token is '%s' and token_format is '%s'\n",
+           token,
+           token_format);
+    closelog();
+#endif
+
     rc = sscanf(token,
                 token_format,
                 &token_uid,
