@@ -91,11 +91,11 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
 
     char udspath[MAX_UDS_PATH + 1];
     rc = snprintf(udspath,
-                  MAX_UDS_PATH,
+                  sizeof(udspath),
                   UDS_PATH,
                   token_uid,
                   token_pid);
-    if (rc <= 0 || rc >= MAX_UDS_PATH)
+    if (rc <= 0 || rc >= sizeof(udspath))
         return PAM_AUTHINFO_UNAVAIL;
 
     /* Find out which user is trying to log in. */
