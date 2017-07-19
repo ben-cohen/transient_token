@@ -52,6 +52,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&token);
     if (rc != PAM_SUCCESS)
         return PAM_AUTHINFO_UNAVAIL;
+    if (token == NULL)
+        return PAM_AUTHINFO_UNAVAIL;
 
     /*
      * Parse the token.  It should look like:
