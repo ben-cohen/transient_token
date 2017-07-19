@@ -103,7 +103,9 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     /* Find out which user is trying to log in. */
     const char *user;
     rc = pam_get_user(pamh, &user, NULL);
-    if (rc != PAM_SUCCESS)
+    if (rc != PAM_SUCCESS
+        || user == NULL
+        || user[0] == '\0')
         return PAM_AUTHINFO_UNAVAIL;
 
     /* Verify that the user matches the uid from the token. */
