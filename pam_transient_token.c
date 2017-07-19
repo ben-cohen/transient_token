@@ -36,11 +36,18 @@
 
 #define PAM_SM_AUTH
 #include <security/pam_modules.h>
+#if defined(_OPENPAM)
+#define HAVE_GET_AUTHTOK
+#include <security/pam_appl.h>
+#elif defined(__LINUX_PAM__X)
+#define HAVE_GET_AUTHTOK
+#include <security/pam_ext.h>
+#endif
 
 #include "transient_token.h"
 
 #define CHALLENGE_SIZE_BASE64_BYTES       (CHALLENGE_SIZE_QUADS * 4)
-
+#include <stdlib.h>
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                                    int flags,
                                    int argc,
@@ -49,9 +56,19 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     int rc;
     const char *token;
 
+#ifdef HAVE_GET_AUTHTOK
+    rc = pam_get_authtok(pamh, PAM_AUTHTOK, (const char **)&token, NULL);
+#else
     rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&token);
+#endif
     if (rc != PAM_SUCCESS)
         return PAM_AUTHINFO_UNAVAIL;
+#ifndef HAVE_GET_AUTHTOK
+    if (token == NULL)
+    {
+        // TODO: implement conversation
+    }
+#endif
     if (token == NULL)
         return PAM_AUTHINFO_UNAVAIL;
 
