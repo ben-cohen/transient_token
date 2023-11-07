@@ -82,7 +82,7 @@ int main()
     int rc;
 
     /* Create unix domain socket */
-    char udspath[MAX_UDS_PATH];
+    char udspath[MAX_UDS_PATH + 1];
     snprintf(udspath,
              sizeof(udspath),
              UDS_PATH,

@@ -25,7 +25,7 @@
 
 #define CHALLENGE_SIZE_QUADS 4
 #define TIMEOUT_SECS 60
-#define MAX_UDS_PATH 32
+#define MAX_UDS_PATH 64
 #define UDS_PATH "/tmp/transient-token-%d-%d"
 
 #ifdef PAM_STATIC             /* for the case that this module is static */
