@@ -80,14 +80,20 @@ int getrandbase64(char *data_base64)
 int main()
 {
     int rc;
+    int len;
 
     /* Create unix domain socket */
     char udspath[MAX_UDS_PATH + 1];
-    snprintf(udspath,
-             sizeof(udspath),
-             UDS_PATH,
-             getuid(),
-             getpid());
+    len = snprintf(udspath,
+                   sizeof(udspath),
+                   UDS_PATH,
+                   getuid(),
+                   getpid());
+    if (len <= 0 || len >= sizeof(udspath))
+    {
+        fprintf(stderr, "snprintf(udspath) failed\n");
+        exit(1);
+    }
     unlink(udspath);
 
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -150,7 +156,6 @@ int main()
 
     /* Generate and print the token */
     char buffer[255];
-    int len;
     len = snprintf(buffer, sizeof(buffer),
                    "TTK%d:%d:%.*s%.*s",
                    getuid(),
@@ -159,7 +164,7 @@ int main()
                    challenge,
                    CHALLENGE_SIZE_BASE64_BYTES,
                    response);
-    if (len == sizeof(buffer))
+    if (len <= 0 || len >= sizeof(buffer))
     {
         fprintf(stderr, "Buffer too small\n");
         close(fd);
