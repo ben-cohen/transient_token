@@ -39,7 +39,7 @@
 #if defined(_OPENPAM)
 #define HAVE_GET_AUTHTOK
 #include <security/pam_appl.h>
-#elif defined(__LINUX_PAM__X)
+#elif defined(__LINUX_PAM__)
 #define HAVE_GET_AUTHTOK
 #include <security/pam_ext.h>
 #endif
