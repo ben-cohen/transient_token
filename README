@@ -5,6 +5,10 @@ Transient_token is a PAM module for Linux to provide a token that can be
 requested by a user that can then be used to authenticate once within a
 short period.
 
+
+Installation and usage
+----------------------
+
 To install:
 
     make
@@ -30,11 +34,15 @@ For example:
 Authentication is performed by the PAM module connecting to the Unix
 domain socket given by the path "/tmp/transient-token-<uid>-<pid>" (by
 default) and checking that it corresponds to the given user id and
-process id; it then writes the token to the socket and expects to
-receive the response "PASS" rather than "FAIL".
+process id; it then writes the Base64 auth string to the socket and
+expects to receive the response "PASS" rather than "FAIL".
 
 The token is never saved anywhere and is no longer valid after
 get_transient_token exits.
+
+
+Motivation
+----------
 
 This is expected to be useful occasionally for scripted authentication.
 It is unlikely to be useful for passwords that need to be typed
@@ -78,3 +86,22 @@ together to log in using ssh credentials:
         'get_transient_token ; sleep 10'
     | (read TOKEN ; \
        xfreerdp /v:localhost:12345 /u:$USER /p:"$TOKEN")
+
+
+Security design
+---------------
+
+We assume that it is safe for PAM to delegate an authentication request
+to a process running as a given user.  We are therefore not concerned
+about the user setting up an "imposter" program at the other end of the
+socket.  So the PAM module can send the token to get_transient_token to
+authenticate.
+
+In this implementation, the user being authenticated must be the same as
+the user running the delegated authentication process.  (That is not
+necessary in general.  For example, with some changes, a given user
+could be trusted to generate tokens to authenticate any other user.)
+
+The uid check provided by the Unix Domain Socket is required to verify
+the uid is at the other end of the socket.  (The pid check is for
+validation but not necessary.)
