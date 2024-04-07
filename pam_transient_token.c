@@ -46,7 +46,7 @@
 
 #include "transient_token.h"
 
-#define CHALLENGE_SIZE_BASE64_BYTES       (CHALLENGE_SIZE_QUADS * 4)
+#define AUTH_STRING_SIZE_BASE64_BYTES       (AUTH_STRING_SIZE_QUADS * 4)
 #include <stdlib.h>
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                                    int flags,
@@ -74,9 +74,9 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
 
     /*
      * Parse the token.  It should look like:
-     *    TTK<uid>:<pid>:<challenge>"
+     *    TTK<uid>:<pid>:<base64-auth-string>"
      */
-    char token_challenge[CHALLENGE_SIZE_BASE64_BYTES + 1];
+    char token_auth_string[AUTH_STRING_SIZE_BASE64_BYTES + 1];
     int token_pid;
     int token_uid;
     char token_format[100];
@@ -84,7 +84,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     rc = snprintf(token_format,
                   sizeof(token_format),
                   "TTK%%d:%%d:%%%d[A-Za-z0-9+/]",
-                  CHALLENGE_SIZE_BASE64_BYTES);
+                  AUTH_STRING_SIZE_BASE64_BYTES);
     if (rc <= 0 || rc >= sizeof(token_format))
         return PAM_AUTHINFO_UNAVAIL;
 
@@ -101,7 +101,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                 token_format,
                 &token_uid,
                 &token_pid,
-                token_challenge);
+                token_auth_string);
     if (rc != 3)
         return PAM_AUTH_ERR;
 

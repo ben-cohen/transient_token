@@ -36,15 +36,15 @@
 
 #include "transient_token.h"
 
-#define CHALLENGE_SIZE_RAW_BYTES          (CHALLENGE_SIZE_QUADS * 3)
-#define CHALLENGE_SIZE_BASE64_BYTES       (CHALLENGE_SIZE_QUADS * 4)
+#define AUTH_STRING_SIZE_RAW_BYTES          (AUTH_STRING_SIZE_QUADS * 3)
+#define AUTH_STRING_SIZE_BASE64_BYTES       (AUTH_STRING_SIZE_QUADS * 4)
 
 #define FAILURE_STRING "FAIL\n"
 
 int getrandbase64(char *data_base64)
 {
     int rc;
-    unsigned char data_raw[CHALLENGE_SIZE_RAW_BYTES];
+    unsigned char data_raw[AUTH_STRING_SIZE_RAW_BYTES];
     BIO *mem = BIO_new(BIO_s_mem());
     if (mem == NULL)
         return -1;
@@ -69,9 +69,9 @@ int getrandbase64(char *data_base64)
 
     char *bio_data_base64;
     int len = BIO_get_mem_data(mem, &bio_data_base64);
-    if (len != CHALLENGE_SIZE_BASE64_BYTES + 1)
+    if (len != AUTH_STRING_SIZE_BASE64_BYTES + 1)
         return -1;
-    memcpy(data_base64, bio_data_base64, CHALLENGE_SIZE_BASE64_BYTES);
+    memcpy(data_base64, bio_data_base64, AUTH_STRING_SIZE_BASE64_BYTES);
 
     BIO_free_all(mem);
 
@@ -137,11 +137,11 @@ int main()
     }
 
     /* Generate a random value for the token */
-    char challenge[CHALLENGE_SIZE_BASE64_BYTES];
-    rc = getrandbase64(challenge);
+    char auth_string[AUTH_STRING_SIZE_BASE64_BYTES];
+    rc = getrandbase64(auth_string);
     if (rc != 0)
     {
-        fprintf(stderr, "failed to generate challenge\n");
+        fprintf(stderr, "failed to generate auth_string\n");
         close(fd);
         unlink(udspath);
         exit(1);
@@ -153,8 +153,8 @@ int main()
                    "TTK%d:%d:%.*s",
                    getuid(),
                    getpid(),
-                   CHALLENGE_SIZE_BASE64_BYTES,
-                   challenge);
+                   AUTH_STRING_SIZE_BASE64_BYTES,
+                   auth_string);
     if (len <= 0 || len >= sizeof(buffer))
     {
         fprintf(stderr, "Buffer too small\n");
@@ -187,9 +187,9 @@ int main()
         socklen_t addrsize = sizeof(addr);
         int fdc = accept(fd, (struct sockaddr*)&addr, &addrsize);
 
-        char inchallenge[255];  
-        int bytes_read = read(fdc, inchallenge, sizeof(inchallenge));
-        if (bytes_read > 0 && strncmp(inchallenge, buffer, bytes_read) == 0)
+        char received_token[255];  
+        int bytes_read = read(fdc, received_token, sizeof(received_token));
+        if (bytes_read > 0 && strncmp(received_token, buffer, bytes_read) == 0)
         {
             write(fdc, SUCCESS_STRING, sizeof(SUCCESS_STRING));
         }
