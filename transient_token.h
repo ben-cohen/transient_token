@@ -23,7 +23,7 @@
 #ifndef _TRANSIENT_TOKEN_H
 #define _TRANSIENT_TOKEN_H
 
-#define AUTH_STRING_SIZE_QUADS 4
+#define AUTH_STRING_SIZE_QUADS 8
 #define TIMEOUT_SECS 60
 #define MAX_UDS_PATH 64
 #define UDS_PATH "/tmp/transient-token-%d-%d"

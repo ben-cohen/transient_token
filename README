@@ -29,7 +29,7 @@ this:
 
 For example:
 
-    TTK1000:13551:M24QbiGM
+    TTK1000:13551:ZvGpYyBawL0ZXo/HjdYm/qBc0c/UE8Ds
 
 Authentication is performed by the PAM module connecting to the Unix
 domain socket given by the path "/tmp/transient-token-<uid>-<pid>" (by
