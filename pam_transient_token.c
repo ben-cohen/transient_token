@@ -77,15 +77,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
      *    TTK<uid>:<pid>:<challenge>"
      */
     char token_challenge[CHALLENGE_SIZE_BASE64_BYTES + 1];
-    char token_response[CHALLENGE_SIZE_BASE64_BYTES + 1];
     int token_pid;
     int token_uid;
     char token_format[100];
 
     rc = snprintf(token_format,
                   sizeof(token_format),
-                  "TTK%%d:%%d:%%%d[A-Za-z0-9+/]%%%d[A-Za-z0-9+/]",
-                  CHALLENGE_SIZE_BASE64_BYTES,
+                  "TTK%%d:%%d:%%%d[A-Za-z0-9+/]",
                   CHALLENGE_SIZE_BASE64_BYTES);
     if (rc <= 0 || rc >= sizeof(token_format))
         return PAM_AUTHINFO_UNAVAIL;
@@ -103,9 +101,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
                 token_format,
                 &token_uid,
                 &token_pid,
-                token_challenge,
-                token_response);
-    if (rc != 4)
+                token_challenge);
+    if (rc != 3)
         return PAM_AUTH_ERR;
 
     char udspath[MAX_UDS_PATH + 1];
@@ -146,16 +143,16 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh,
     if (rc != 0)
         return PAM_AUTH_ERR;
 
-    /* Send the challenge and check that the response is correct. */
-    rc = write(fd, token_challenge, CHALLENGE_SIZE_BASE64_BYTES);
-    if (rc != CHALLENGE_SIZE_BASE64_BYTES)
+    /* Send the token and check for success. */
+    rc = write(fd, token, strlen(token));
+    if (rc != strlen(token))
         return PAM_AUTH_ERR;
 
-    char inresponse[CHALLENGE_SIZE_BASE64_BYTES];
-    rc = read(fd, inresponse, CHALLENGE_SIZE_BASE64_BYTES);
-    if (rc != sizeof(inresponse))
+    char inresponse[sizeof(SUCCESS_STRING)];
+    rc = read(fd, inresponse, sizeof(inresponse));
+    if (rc != sizeof(SUCCESS_STRING))
         return PAM_AUTH_ERR;
-    if (memcmp(token_response, inresponse, CHALLENGE_SIZE_BASE64_BYTES) != 0)
+    if (memcmp(SUCCESS_STRING, inresponse, sizeof(SUCCESS_STRING)) != 0)
         return PAM_AUTH_ERR;
 
     return PAM_SUCCESS;

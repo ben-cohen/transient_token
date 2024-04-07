@@ -39,6 +39,8 @@
 #define CHALLENGE_SIZE_RAW_BYTES          (CHALLENGE_SIZE_QUADS * 3)
 #define CHALLENGE_SIZE_BASE64_BYTES       (CHALLENGE_SIZE_QUADS * 4)
 
+#define FAILURE_STRING "FAIL\n"
+
 int getrandbase64(char *data_base64)
 {
     int rc;
@@ -134,9 +136,8 @@ int main()
         exit(1);
     }
 
-    /* Generate a random challenge and response */
+    /* Generate a random value for the token */
     char challenge[CHALLENGE_SIZE_BASE64_BYTES];
-    char response[CHALLENGE_SIZE_BASE64_BYTES];
     rc = getrandbase64(challenge);
     if (rc != 0)
     {
@@ -145,25 +146,15 @@ int main()
         unlink(udspath);
         exit(1);
     }
-    rc = getrandbase64(response);
-    if (rc != 0)
-    {
-        fprintf(stderr, "failed to generate response\n");
-        close(fd);
-        unlink(udspath);
-        exit(1);
-    }
 
     /* Generate and print the token */
     char buffer[255];
     len = snprintf(buffer, sizeof(buffer),
-                   "TTK%d:%d:%.*s%.*s",
+                   "TTK%d:%d:%.*s",
                    getuid(),
                    getpid(),
                    CHALLENGE_SIZE_BASE64_BYTES,
-                   challenge,
-                   CHALLENGE_SIZE_BASE64_BYTES,
-                   response);
+                   challenge);
     if (len <= 0 || len >= sizeof(buffer))
     {
         fprintf(stderr, "Buffer too small\n");
@@ -174,7 +165,6 @@ int main()
 
     /* Print the token */
     printf("%s\n", buffer);
-    memset(buffer, 0, sizeof(buffer));
 
     /* Daemonize */
     fflush(stdout);
@@ -197,16 +187,15 @@ int main()
         socklen_t addrsize = sizeof(addr);
         int fdc = accept(fd, (struct sockaddr*)&addr, &addrsize);
 
-        char inchallenge[CHALLENGE_SIZE_BASE64_BYTES];  
-        read(fdc, inchallenge, CHALLENGE_SIZE_BASE64_BYTES);
-        if (memcmp(challenge, inchallenge, CHALLENGE_SIZE_BASE64_BYTES) == 0)
+        char inchallenge[255];  
+        int bytes_read = read(fdc, inchallenge, sizeof(inchallenge));
+        if (bytes_read > 0 && strncmp(inchallenge, buffer, bytes_read) == 0)
         {
-            write(fdc, response, sizeof(response));
-            write(fdc, "\n", 1);
+            write(fdc, SUCCESS_STRING, sizeof(SUCCESS_STRING));
         }
         else
         {
-            write(fdc, "FAIL\n", 5);
+            write(fdc, FAILURE_STRING, sizeof(FAILURE_STRING));
         }
         close(fdc);
     }
