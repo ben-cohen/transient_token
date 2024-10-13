@@ -75,7 +75,7 @@ together to log in using ssh credentials:
     # direct rdp connection
     ssh $SERVER \
         -x \
-        get_transient_token
+        get_transient_token \
     | (read TOKEN ; \
        xfreerdp /v:$SERVER:$REMPORT /u:$REMUSER /p:"$TOKEN")
 
@@ -83,7 +83,7 @@ together to log in using ssh credentials:
     ssh $SERVER \
         -x \
         -L localhost:12345:localhost:$REMPORT \
-        'get_transient_token ; sleep 10'
+        'get_transient_token ; sleep 10' \
     | (read TOKEN ; \
        xfreerdp /v:localhost:12345 /u:$REMUSER /p:"$TOKEN")
 
