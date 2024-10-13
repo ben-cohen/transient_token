@@ -69,7 +69,7 @@ together to log in using ssh credentials:
 
     # edit as appropriate
     SERVER=server
-    USER=`whoami`
+    REMUSER=`whoami`
     REMPORT=3389
 
     # direct rdp connection
@@ -77,7 +77,7 @@ together to log in using ssh credentials:
         -x \
         get_transient_token
     | (read TOKEN ; \
-       xfreerdp /v:$SERVER:$REMPORT /u:$USER /p:"$TOKEN")
+       xfreerdp /v:$SERVER:$REMPORT /u:$REMUSER /p:"$TOKEN")
 
     # rdp via ssh tunnel
     ssh $SERVER \
@@ -85,7 +85,7 @@ together to log in using ssh credentials:
         -L localhost:12345:localhost:$REMPORT \
         'get_transient_token ; sleep 10'
     | (read TOKEN ; \
-       xfreerdp /v:localhost:12345 /u:$USER /p:"$TOKEN")
+       xfreerdp /v:localhost:12345 /u:$REMUSER /p:"$TOKEN")
 
 
 Security design
